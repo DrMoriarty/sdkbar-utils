@@ -1,0 +1,5 @@
+
+sdkbox.copy_files(['utils'], PLUGIN_PATH, COCOS_CLASSES_DIR)
+
+sdkbar.androidJni(['../../../Classes/utils/PluginUtils.cpp'])
+

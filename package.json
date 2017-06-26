@@ -1,0 +1,17 @@
+{
+    "name": "sdkbar-utils",
+    "version": "0.0.1",
+    "description": "Plugin with some low level utils for cocos2d-x",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DrMoriarty/sdkbar-utils"
+    },
+    "keywords": [
+        "cocos2d-x",
+        "plugin",
+        "sdkbox",
+        "ecosystem:cocos2d-x"
+    ],
+    "author": "DrMoriarty",
+    "license": "MIT License"
+}
