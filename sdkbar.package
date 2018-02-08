@@ -1,4 +1,6 @@
 
+sdkbox.copy_files(['app'], PLUGIN_PATH, ANDROID_STUDIO_PROJECT_DIR)
+
 sdkbox.copy_files(['utils'], PLUGIN_PATH, COCOS_CLASSES_DIR)
 
 sdkbox.android_add_sources(['../../Classes/utils/PluginUtils.cpp'])
