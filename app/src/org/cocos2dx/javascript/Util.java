@@ -25,6 +25,7 @@ import android.content.ClipboardManager;
 
 import android.content.Intent;
 import android.util.Log;
+import com.crashlytics.android.Crashlytics;
 
 public class Util {
 
