@@ -215,4 +215,8 @@ public class Util {
 			}
 		});
 	}
+
+    public static void testCrashlytics() {
+        Crashlytics.getInstance().crash();
+    }
 }
