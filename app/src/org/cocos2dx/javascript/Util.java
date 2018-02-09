@@ -34,20 +34,14 @@ public class Util {
 	public static int TYPE_MOBILE = 2;
 	public static int TYPE_NOT_CONNECTED = 0;
 
-	public static AppActivity app;
-
-	public static void init(AppActivity _app) {
-		app = _app;
-	}
-
 	public static String GetId() {
-		String deviceId = Secure.getString(app.getContentResolver(), Secure.ANDROID_ID);
+		String deviceId = Secure.getString(Cocos2dxHelper.getActivity().getContentResolver(), Secure.ANDROID_ID);
 
 		return deviceId;
 	}
 
 	public static String GetPackageName() {
-		Context context = app.getApplicationContext();
+		Context context = Cocos2dxHelper.getActivity().getApplicationContext();
 		String PackageName = context.getPackageName();
 		return PackageName;
 	}
@@ -57,9 +51,9 @@ public class Util {
 	}
 
 	public static String getStringResByName(String aString) {
-		int resId = app.getResources().getIdentifier(aString, "string", app.getPackageName());
+		int resId = Cocos2dxHelper.getActivity().getResources().getIdentifier(aString, "string", Cocos2dxHelper.getActivity().getPackageName());
 		try {
-			return app.getString(resId);
+			return Cocos2dxHelper.getActivity().getString(resId);
 		} catch (Exception e) {
 			return "";
 		}
@@ -76,7 +70,7 @@ public class Util {
 	
 	public static int isNetworkAvailable() {
 		ConnectivityManager connectivityManager
-				= (ConnectivityManager) app.getSystemService(Context.CONNECTIVITY_SERVICE);
+				= (ConnectivityManager) Cocos2dxHelper.getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
 
 		if (null != activeNetwork) {
@@ -95,10 +89,10 @@ public class Util {
 		Cocos2dxJavascriptJavaBridge.evalString("cc.log(\"!!!test!\")");
 
 		//we must use runOnUiThread here
-		app.runOnUiThread(new Runnable() {
+		Cocos2dxHelper.getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				AlertDialog alertDialog = new AlertDialog.Builder(app).create();
+				AlertDialog alertDialog = new AlertDialog.Builder(Cocos2dxHelper.getActivity()).create();
 				alertDialog.setTitle(title);
 				alertDialog.setMessage(message);
 //				alertDialog.setIcon(R.drawable.icon);
@@ -119,25 +113,25 @@ public class Util {
 	}
 
 	public static void toast(final String title) {
-		Toast toast = Toast.makeText(app.getApplicationContext(),
+		Toast toast = Toast.makeText(Cocos2dxHelper.getActivity().getApplicationContext(),
 				title, Toast.LENGTH_SHORT);
 		toast.show();
 	}
 	public static void LocalNotificationCancel(final int id) {
-		app.runOnUiThread(new Runnable() {
+		Cocos2dxHelper.getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				LocalNotification.cancel(app.getApplicationContext(), id);
+				LocalNotification.cancel(Cocos2dxHelper.getActivity().getApplicationContext(), id);
 			}
 		});
 	}
 
 	public static void LocalNotificationAdd(final int id, final String ticker, final String title, final String message, final int seconds) {
 		//showAlertDialog(title, message);
-		app.runOnUiThread(new Runnable() {
+		Cocos2dxHelper.getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				LocalNotification.add(app.getApplicationContext(), id, ticker, title, message, seconds);
+				LocalNotification.add(Cocos2dxHelper.getActivity().getApplicationContext(), id, ticker, title, message, seconds);
 			}
 		});
 	}
@@ -189,7 +183,7 @@ public class Util {
 
 	public static void restart() {
 		try {
-			Context context = app.getApplicationContext();
+			Context context = Cocos2dxHelper.getActivity().getApplicationContext();
 			Log.i(TAG, "restarting app " + context.getPackageName());
 			Intent restartIntent = context.getPackageManager()
 					.getLaunchIntentForPackage(context.getPackageName());
@@ -198,7 +192,7 @@ public class Util {
 					restartIntent, Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 			manager.set(AlarmManager.RTC, System.currentTimeMillis() + 100, intent);
-			app.finish();
+			Cocos2dxHelper.getActivity().finish();
 			System.exit(0);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -213,10 +207,10 @@ public class Util {
 	 */
 	public static void clipboard(final String text) {
 		//we must use runOnUiThread here
-		app.runOnUiThread(new Runnable() {
+		Cocos2dxHelper.getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				ClipboardManager clipboardManager = (ClipboardManager) app.getSystemService(Context.CLIPBOARD_SERVICE);
+				ClipboardManager clipboardManager = (ClipboardManager) Cocos2dxHelper.getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
 				clipboardManager.setPrimaryClip(ClipData.newPlainText("text", text));
 			}
 		});
