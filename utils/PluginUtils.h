@@ -12,9 +12,12 @@ typedef int64_t Status;
 typedef unsigned char UTF8;
 typedef uint32_t UTF32;
 
+jsval my_std_string_to_jsval(JSContext* cx, const std::string& v);
+
 std::string Stringify(JSContext *cx, JS::RootedValue &arg0Val);
 std::string utf8_from_wstring(const std::wstring& src, Status* err);
 std::wstring wstring_from_utf8(const std::string& src, Status* err);
+
 
 typedef struct CallbackFrame {
     static int nextId;

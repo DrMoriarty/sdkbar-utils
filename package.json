@@ -1,6 +1,6 @@
 {
     "name": "sdkbar-utils",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Plugin with some low level utils for cocos2d-x",
     "repository": {
         "type": "git",
