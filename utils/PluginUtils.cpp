@@ -1,6 +1,5 @@
 #include "PluginUtils.h"
 #include "base/ccUTF8.h"
-#include "external/ConvertUTF/ConvertUTF.h"
 
 int CallbackFrame::nextId = 0;
 std::vector<CallbackFrame*> CallbackFrame::callbackVector;
@@ -22,8 +21,162 @@ struct ConvertTrait<char32_t> {
     typedef UTF32 ArgType;
 };
 
+static const int halfShift  = 10; /* used for shifting by 10 bits */
+
+static const UTF32 halfBase = 0x0010000UL;
+static const UTF32 halfMask = 0x3FFUL;
+
+#define UNI_SUR_HIGH_START  (UTF32)0xD800
+#define UNI_SUR_HIGH_END    (UTF32)0xDBFF
+#define UNI_SUR_LOW_START   (UTF32)0xDC00
+#define UNI_SUR_LOW_END     (UTF32)0xDFFF
+
+static const char trailingBytesForUTF8[256] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
+};
+
+static const UTF32 offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL, 
+                     0x03C82080UL, 0xFA082080UL, 0x82082080UL };
+
+static Boolean isLegalUTF8(const UTF8 *source, int length) {
+    UTF8 a;
+    const UTF8 *srcptr = source+length;
+    switch (length) {
+    default: return false;
+        /* Everything else falls through when "true"... */
+    case 4: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
+    case 3: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
+    case 2: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
+
+        switch (*source) {
+            /* no fall-through in this inner switch */
+            case 0xE0: if (a < 0xA0) return false; break;
+            case 0xED: if (a > 0x9F) return false; break;
+            case 0xF0: if (a < 0x90) return false; break;
+            case 0xF4: if (a > 0x8F) return false; break;
+            default:   if (a < 0x80) return false;
+        }
+
+    case 1: if (*source >= 0x80 && *source < 0xC2) return false;
+    }
+    if (*source > 0xF4) return false;
+    return true;
+}
+
+int checkUTF8LegalSymbols(const UTF8* sourceStart, const UTF8* sourceEnd) {
+    const UTF8* source = sourceStart;
+    int counter = 0;
+    while (source < sourceEnd) {
+        unsigned short extraBytesToRead = trailingBytesForUTF8[*source];
+        if (extraBytesToRead >= sourceEnd - source) {
+            return counter;
+        }
+        if (!isLegalUTF8(source, extraBytesToRead+1)) {
+            return counter;
+        }
+        counter += extraBytesToRead + 1;
+        source += extraBytesToRead + 1;
+    }
+    return -1;
+}
+
+// ED A0 BC
+std::string printUTF8Code(const UTF8* source) {
+    unsigned short extraBytesToRead = trailingBytesForUTF8[*source];
+    std::stringstream ss;
+    for(int i=0; i<=extraBytesToRead; i++) {
+        ss << (int)(*source) << " ";
+        source++;
+    }
+    return ss.str();
+}
+
+ConversionResult myConvertUTF8toUTF16 (
+        const UTF8** sourceStart, const UTF8* sourceEnd, 
+        UTF16** targetStart, UTF16* targetEnd, ConversionFlags flags) {
+    ConversionResult result = conversionOK;
+    const UTF8* source = *sourceStart;
+    UTF16* target = *targetStart;
+    while (source < sourceEnd) {
+        UTF32 ch = 0;
+        unsigned short extraBytesToRead = trailingBytesForUTF8[*source];
+        if (extraBytesToRead >= sourceEnd - source) {
+            result = sourceExhausted; break;
+        }
+        /* Do this check whether lenient or strict */
+        if (!isLegalUTF8(source, extraBytesToRead+1)) {
+            if (flags == strictConversion) {
+                result = sourceIllegal;
+                break;
+            } else {
+                //*target++ = UNI_REPLACEMENT_CHAR;
+                source += extraBytesToRead+1;
+                continue;
+            }
+        }
+        /*
+         * The cases all fall through. See "Note A" below.
+         */
+        switch (extraBytesToRead) {
+            case 5: ch += *source++; ch <<= 6; /* remember, illegal UTF-8 */
+            case 4: ch += *source++; ch <<= 6; /* remember, illegal UTF-8 */
+            case 3: ch += *source++; ch <<= 6;
+            case 2: ch += *source++; ch <<= 6;
+            case 1: ch += *source++; ch <<= 6;
+            case 0: ch += *source++;
+        }
+        ch -= offsetsFromUTF8[extraBytesToRead];
+
+        if (target >= targetEnd) {
+            source -= (extraBytesToRead+1); /* Back up source pointer! */
+            result = targetExhausted; break;
+        }
+        if (ch <= UNI_MAX_BMP) { /* Target is a character <= 0xFFFF */
+            /* UTF-16 surrogate values are illegal in UTF-32 */
+            if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_LOW_END) {
+                if (flags == strictConversion) {
+                    source -= (extraBytesToRead+1); /* return to the illegal value itself */
+                    result = sourceIllegal;
+                    break;
+                } else {
+                    //*target++ = UNI_REPLACEMENT_CHAR;
+                }
+            } else {
+                *target++ = (UTF16)ch; /* normal case */
+            }
+        } else if (ch > UNI_MAX_UTF16) {
+            if (flags == strictConversion) {
+                result = sourceIllegal;
+                source -= (extraBytesToRead+1); /* return to the start */
+                break; /* Bail out; shouldn't continue */
+            } else {
+                //*target++ = UNI_REPLACEMENT_CHAR;
+            }
+        } else {
+            /* target is a character in range 0xFFFF - 0x10FFFF. */
+            if (target + 1 >= targetEnd) {
+                source -= (extraBytesToRead+1); /* Back up source pointer! */
+                result = targetExhausted; break;
+            }
+            ch -= halfBase;
+            *target++ = (UTF16)((ch >> halfShift) + UNI_SUR_HIGH_START);
+            *target++ = (UTF16)((ch & halfMask) + UNI_SUR_LOW_START);
+        }
+    }
+    *sourceStart = source;
+    *targetStart = target;
+    return result;
+}
+
 template <typename From, typename To, typename FromTrait = ConvertTrait<From>, typename ToTrait = ConvertTrait<To>>
-bool myUtfConvert(
+ConversionResult myUtfConvert(
     const std::basic_string<From>& from, std::basic_string<To>& to,
     ConversionResult(*cvtfunc)(const typename FromTrait::ArgType**, const typename FromTrait::ArgType*,
         typename ToTrait::ArgType**, typename ToTrait::ArgType*,
@@ -36,7 +189,7 @@ bool myUtfConvert(
     if (from.empty())
     {
         to.clear();
-        return true;
+        return conversionOK;
     }
 
     // See: http://unicode.org/faq/utf_bom.html#gen6
@@ -55,18 +208,18 @@ bool myUtfConvert(
     auto outend = outbeg + working.length();
     auto r = cvtfunc(&inbeg, inend, &outbeg, outend, lenientConversion);
     if (r != conversionOK)
-        return false;
+        return r;
 
     working.resize(reinterpret_cast<To*>(outbeg) - &working[0]);
     to = std::move(working);
 
-    return true;
+    return conversionOK;
 };
 
 
-bool myUTF8ToUTF16(const std::string& utf8, std::u16string& outUtf16)
+ConversionResult myUTF8ToUTF16(const std::string& utf8, std::u16string& outUtf16)
 {
-    return myUtfConvert(utf8, outUtf16, ConvertUTF8toUTF16);
+    return myUtfConvert(utf8, outUtf16, myConvertUTF8toUTF16);
 }
 
 jsval my_c_string_to_jsval(JSContext* cx, const char* v, size_t length /* = -1 */)
@@ -91,7 +244,7 @@ jsval my_c_string_to_jsval(JSContext* cx, const char* v, size_t length /* = -1 *
     jsval ret = JSVAL_NULL;
 
     std::u16string strUTF16;
-    bool ok = myUTF8ToUTF16(std::string(v, length), strUTF16);
+    bool ok = myUTF8ToUTF16(std::string(v, length), strUTF16) == conversionOK;
 
     if (ok && !strUTF16.empty()) {
         JSString* str = JS_NewUCStringCopyN(cx, reinterpret_cast<const jschar*>(strUTF16.data()), strUTF16.size());
