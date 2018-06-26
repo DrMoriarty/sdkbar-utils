@@ -4,8 +4,10 @@
 #include "utf16string.h"
 #include "scripting/js-bindings/manual/cocos2d_specifics.hpp"
 #include "scripting/js-bindings/manual/js_manual_conversions.h"
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
 #include "platform/android/jni/JniHelper.h"
 #include <jni.h>
+#endif
 #include <sstream>
 #include "external/ConvertUTF/ConvertUTF.h"
 
