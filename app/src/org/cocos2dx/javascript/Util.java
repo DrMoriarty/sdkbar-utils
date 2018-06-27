@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import android.app.PendingIntent;
 import android.app.AlarmManager;
+import android.app.Activity;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -41,7 +42,7 @@ public class Util {
         app = _app;
     }
 
-    public static getAppActivity() {
+    public static Activity getAppActivity() {
         if(app != null) return app;
         else return Cocos2dxHelper.getActivity();
     }
