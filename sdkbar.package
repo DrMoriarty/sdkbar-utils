@@ -1,8 +1,20 @@
 
 sdkbox.copy_files(['app'], PLUGIN_PATH, ANDROID_STUDIO_PROJECT_DIR)
+sdkbox.copy_files(['ios'], PLUGIN_PATH, IOS_PROJECT_DIR)
 
 sdkbox.copy_files(['utils'], PLUGIN_PATH, COCOS_CLASSES_DIR)
 
 sdkbox.android_add_sources(['../../Classes/utils/PluginUtils.cpp'])
 sdkbox.xcode_add_sources(['../Classes/utils/PluginUtils.cpp'])
 
+sdkbar.appDelegateInject({
+    'marker': SDKBOX_PACKAGE_NAME,
+    'android': {
+         'include': 'utils/PluginUtilsApi.hpp',
+         'function': 'register_all_utils_framework'
+    },
+    'ios': {
+         'include': 'utils/PluginUtilsApi.h',
+         'function': 'register_all_utils_framework'
+    }
+})
