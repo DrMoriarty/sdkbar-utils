@@ -26,6 +26,8 @@ import android.content.ClipboardManager;
 import android.content.Intent;
 import android.util.Log;
 import com.crashlytics.android.Crashlytics;
+import android.app.backup.BackupManager;
+import android.content.SharedPreferences;
 
 public class Util {
 
@@ -34,17 +36,29 @@ public class Util {
 	public static int TYPE_WIFI = 1;
 	public static int TYPE_MOBILE = 2;
 	public static int TYPE_NOT_CONNECTED = 0;
+    public static final String PREFS = "user_preferences";
 
 	public static AppActivity app;
+    private static BackupManager backupManager;
+    private static SharedPreferences prefs;
 
 	public static void init(AppActivity _app) {
 		app = _app;
+        backupManager = new BackupManager(_app);
+        prefs = _app.getSharedPreferences(PREFS, 0);
 	}
 
 	public static String GetId() {
 		String deviceId = "";
+        String storedId = prefs.getString("ANDROID_ID", null);
+        if(storedId != null) {
+            return storedId;
+        }
+
 		try {
 			deviceId = Secure.getString(app.getContentResolver(), Secure.ANDROID_ID);
+            prefs.edit().putString("ANDROID_ID", deviceId).apply();
+            backupManager.dataChanged();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
