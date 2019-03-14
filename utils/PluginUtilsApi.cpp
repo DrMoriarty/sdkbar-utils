@@ -1,8 +1,4 @@
-#import "PluginUtilsApi.h"
-#include "scripting/js-bindings/manual/cocos2d_specifics.hpp"
-
-int CallbackFrame::nextId = 0;
-std::vector<CallbackFrame*> CallbackFrame::callbackVector;
+#include "PluginUtilsApi.hpp"
 
 ///////////////////////////////////////
 //
@@ -21,8 +17,8 @@ static bool jsb_utils_deviceid(JSContext *cx, uint32_t argc, jsval *vp)
     JS::RootedObject obj(cx, args.thisv().toObjectOrNull());
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     if(argc == 0) {
-        //std::string result = cocos2d::JniHelper::callStaticStringMethod("org/cocos2dx/javascript/Util", "GetId");
-        //rec.rval().set(std_string_to_jsval(cx, result));
+        std::string result = cocos2d::JniHelper::callStaticStringMethod("org/cocos2dx/javascript/Util", "GetId");
+        rec.rval().set(std_string_to_jsval(cx, result));
         return true;
     } else {
         JS_ReportError(cx, "Invalid number of arguments");
@@ -37,8 +33,8 @@ static bool jsb_utils_deviceidmd5(JSContext *cx, uint32_t argc, jsval *vp)
     JS::RootedObject obj(cx, args.thisv().toObjectOrNull());
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     if(argc == 0) {
-        //std::string result = cocos2d::JniHelper::callStaticStringMethod("org/cocos2dx/javascript/Util", "GetIdMd5");
-        //rec.rval().set(std_string_to_jsval(cx, result));
+        std::string result = cocos2d::JniHelper::callStaticStringMethod("org/cocos2dx/javascript/Util", "GetIdMd5");
+        rec.rval().set(std_string_to_jsval(cx, result));
         return true;
     } else {
         JS_ReportError(cx, "Invalid number of arguments");
